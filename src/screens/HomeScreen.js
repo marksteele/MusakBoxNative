@@ -1,20 +1,34 @@
 import {StyleSheet, View, Button} from 'react-native';
 import React from 'react';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: 22,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-evenly',
   },
 });
 
 const HomeScreen = ({navigation}) => {
   return (
     <View style={styles.container}>
-      <Button title="Artists" onPress={() => navigation.navigate('Artists')} />
-      <Button title="Search" onPress={() => navigation.navigate('Search')} />
-      <Button
-        title="Playlists"
+      <Icon
+        name="brush"
+        size={40}
+        onPress={() => navigation.navigate('Artists')}
+      />
+      <MaterialIcon
+        name="search"
+        size={40}
+        onPress={() => navigation.navigate('Search')}
+      />
+      <Icon
+        name="playlist-music"
+        size={40}
         onPress={() => navigation.navigate('Playlists')}
       />
     </View>

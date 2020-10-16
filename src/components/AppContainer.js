@@ -8,6 +8,7 @@ import {listSongs} from '../util/songs';
 const AppContainer = (props) => {
   const [{}, dispatch] = useContext(GlobalContext);
 
+  // Initial data load
   useEffect(() => {
     listSongs().then((songs) => {
       dispatch({type: 'setSongList', songs: songs});

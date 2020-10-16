@@ -4,12 +4,13 @@ import {Animated, StyleSheet, Text, View, I18nManager} from 'react-native';
 import {GlobalContext} from '../state/GlobalState';
 import {RectButton} from 'react-native-gesture-handler';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const AppleStyleSwipeableRow = (props) => {
   const [{}, dispatch] = useContext(GlobalContext);
   const container = useRef(null);
 
-  const renderRightAction = (text, color, x, progress) => {
+  const renderRightAction = (color, x, progress) => {
     const trans = progress.interpolate({
       inputRange: [0, 1],
       outputRange: [x, 0],
@@ -24,7 +25,7 @@ const AppleStyleSwipeableRow = (props) => {
         <RectButton
           style={[styles.rightAction, {backgroundColor: color}]}
           onPress={pressHandler}>
-          <Text style={styles.actionText}>{text}</Text>
+          <Icon name="playlist-remove" size={40} />
         </RectButton>
       </Animated.View>
     );
@@ -35,10 +36,9 @@ const AppleStyleSwipeableRow = (props) => {
         width: 192,
         flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
       }}>
-      {renderRightAction('DeQ', '#dd2c00', 64, progress)}
+      {renderRightAction('#dd2c00', 64, progress)}
     </View>
   );
-  
 
   return (
     <Swipeable

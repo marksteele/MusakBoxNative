@@ -8,6 +8,7 @@ const initialState = {
   playlists: [], // Lists of playlists
   artists: [], // Lists of artists
   search: {},
+  queue: [],
 };
 
 const reducer = (state, action) => {
@@ -21,7 +22,7 @@ const reducer = (state, action) => {
     case 'setAddToQueue':
       return {
         ...state,
-        addToQueue: action.song,
+        queue: Array.from(new Set([action.song, ...state.queue])),
       };
     case 'removeFromQueue':
       return {

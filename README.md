@@ -19,3 +19,10 @@ npx react-native run-ios --simulator "iPhone SE (iOS 14.0)"
 * Document the setup to hook this into the same AWS as MusakBox (share the same Amplify setup between web app and native app).
 * Client side caching. Currently all streaming.
 * Make it pretty. It's ugly, but it works...
+
+
+# Notes
+
+Setting up fonts:
+
+https://www.youtube.com/watch?v=fVoEojORQyQ

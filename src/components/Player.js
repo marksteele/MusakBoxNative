@@ -7,56 +7,25 @@ import TrackPlayer, {
   usePlaybackState,
   useTrackPlayerEvents,
 } from 'react-native-track-player';
-import {StyleSheet, Button, Text, Switch, View} from 'react-native';
+import {StyleSheet, Text, View} from 'react-native';
 import {FlatList, RectButton} from 'react-native-gesture-handler';
 import AppleStyleSwipeableRow from './AppleStyleSwipeableRow';
 import {fetchSongUrl} from '../util/songs.js';
-
-const SwipeableRow = ({item}) => (
-  <AppleStyleSwipeableRow item={item}>
-    <RectButton
-      style={styles.rectButton}
-      onPress={() => TrackPlayer.skip(item.id)}>
-      <Text style={styles.fromText}>{item.title}</Text>
-      <Text style={styles.messageText}>{item.artist}</Text>
-    </RectButton>
-  </AppleStyleSwipeableRow>
-);
-
-function ProgressBar() {
-  const progress = useTrackPlayerProgress();
-
-  return (
-    <View style={styles.progress}>
-      <View style={{flex: progress.position, backgroundColor: 'red'}} />
-      <View
-        style={{
-          flex: progress.duration - progress.position,
-          backgroundColor: 'grey',
-        }}
-      />
-    </View>
-  );
-}
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import MaertialIcon from 'react-native-vector-icons/MaterialIcons';
 
 export default function Player(props) {
   const playbackState = usePlaybackState();
-  const [{addToQueue, queue}, dispatch] = useContext(GlobalContext);
+  const [{queue}] = useContext(GlobalContext);
   const [shuffle, setShuffle] = useState(false);
-  const [trackTitle, setTrackTitle] = useState('');
-  const [trackArtist, setTrackArtist] = useState('');
-  const [render, setRender] = useState([]);
+  const [playing, setPlaying] = useState(0);
+  const [loop, setLoop] = useState(false);
+  const progress = useTrackPlayerProgress();
 
-  useTrackPlayerEvents(['playback-track-changed'], async (event) => {
-    if (event.type === TrackPlayer.TrackPlayerEvents.PLAYBACK_TRACK_CHANGED) {
-      const track = await TrackPlayer.getTrack(event.nextTrack);
-      const {title, artist} = track || {};
-      setTrackTitle(title);
-      setTrackArtist(artist);
-      if (Object.keys(track).length > 0) {
-        const idx = render.findIndex((x) => x.id === track.id);
-        this.flatListRef.scrollToIndex({animated: true, index: idx});
-      }
+  // Will fire when songs in queue done. We'll keep only 1 song in queue
+  useTrackPlayerEvents(['playback-queue-ended'], async (event) => {
+    if (event.type === TrackPlayer.TrackPlayerEvents.PLAYBACK_QUEUE_ENDED) {
+      skipToNext();
     }
   });
   async () => {
@@ -77,24 +46,6 @@ export default function Player(props) {
     });
   };
 
-  useEffect(() => {
-    if (addToQueue !== undefined && Object.keys(addToQueue).length !== 0) {
-      TrackPlayer.getQueue().then((queueSongs) => {
-        const qSet = new Set([...queueSongs.map((x) => x.id)]);
-        if (!qSet.has(addToQueue.id)) {
-          setRender([...queueSongs, addToQueue]);
-          fetchSongUrl(addToQueue.key).then((url) => {
-            TrackPlayer.add({...addToQueue, url: url})
-              .then((res) => {
-                dispatch({type: 'addToQueue', song: {}});
-              })
-              .catch((err) => console.log(err));
-          });
-        }
-      });
-    }
-  }, [addToQueue]);
-
   const lookupUrls = (songs) => {
     return Promise.all(
       songs.map((x) => {
@@ -107,8 +58,6 @@ export default function Player(props) {
 
   useEffect(() => {
     if (Array.isArray(queue)) {
-      console.log('SETTING RENDER TO QUEUE');
-      setRender(queue);
       TrackPlayer.reset()
         .then(() => {
           if (queue.length > 0) {
@@ -122,113 +71,167 @@ export default function Player(props) {
     }
   }, [queue]);
 
-  async function skipToNext() {
-    if (shuffle) {
-      try {
-        const randomId = render[Math.floor(Math.random() * render.length)].id;
-        await TrackPlayer.skip(randomId);
-      } catch (_) {}
-    } else {
-      try {
-        await TrackPlayer.skipToNext();
-      } catch (_) {}
-    }
-    this.flatListRef.scrollToItem({
-      animated: true,
-      item: await TrackPlayer.getCurrentTrack(),
-    });
-  }
-
-  async function skipToPrevious() {
+  async function playIdx(idx) {
+    console.log(`Attempting to play ${queue[idx].key} - ${idx}`);
     try {
-      await TrackPlayer.skipToPrevious();
+      console.log('RESSETTING PLAYER...');
+      await TrackPlayer.reset();
+      console.log('RESSETTING PLAYER...DONE');
+      console.log('SCROLLING...');
+      this.flatListRef.scrollToIndex({
+        animated: true,
+        index: idx,
+      });
+      console.log('SCROLLING...DONE');
+      console.log('ADDING TRACK');
+      await TrackPlayer.add({
+        ...queue[idx],
+        url: await fetchSongUrl(queue[idx].key),
+      });
+      console.log('ADDRING TRACK DONE');
+      console.log('PLAYING...');
+      await TrackPlayer.play();
+      console.log('PLAYING...DONE');
+      console.log('SETTING CURRENT INDEX TO STATE...');
+      setPlaying(idx);
+      console.log('SETTING CURRENT INDEX TO STATE...DONE');
     } catch (_) {}
   }
 
-  async function togglePlayback() {
-    const currentTrack = await TrackPlayer.getCurrentTrack();
-    if (currentTrack == null) {
-      try {
-        await TrackPlayer.skipToNext();
-        await TrackPlayer.play();
-      } catch (_) {}
-    } else {
-      if (playbackState === TrackPlayer.STATE_PAUSED) {
-        await TrackPlayer.play();
+  async function skipToNext() {
+    let idx;
+    if (Array.isArray(queue) && queue.length > 0) {
+      if (shuffle) {
+        // Shuffle on, don't care about order
+        idx = Math.floor(Math.random() * queue.length);
       } else {
-        await TrackPlayer.pause();
+        if (loop) {
+          // Loooping. If at end, wrap
+          idx = playing === queue.length - 1 ? 0 : playing + 1;
+        } else {
+          // Not looping. If at end, stop.
+          if (playing === queue.length - 1) {
+            return;
+          }
+          idx = playing + 1;
+        }
       }
+      await playIdx(idx);
     }
   }
 
-  let middleButton = <Text onPress={() => togglePlayback()}>Play</Text>;
-
-  if (
-    playbackState === TrackPlayer.STATE_PLAYING ||
-    playbackState === TrackPlayer.STATE_BUFFERING
-  ) {
-    middleButton = <Text onPress={() => togglePlayback()}>Pause</Text>;
+  async function skipToPrevious() {
+    let idx;
+    if (Array.isArray(queue) && queue.length > 0) {
+      if (shuffle) {
+        // Shuffle on, don't care about order
+        idx = Math.floor(Math.random() * queue.length);
+      } else {
+        if (loop) {
+          // Loooping. If at start, wrap
+          idx = playing > 0 ? playing - 1 : queue.length - 1;
+        } else {
+          // Not looping. If at start, stop.
+          if (playing === 0) {
+            return;
+          }
+          idx = playing - 1;
+        }
+      }
+      await playIdx(idx);
+    }
   }
 
-  function getStateName(state) {
-    switch (state) {
-      case TrackPlayer.STATE_PLAYING:
-        return '(Playing)';
-      case TrackPlayer.STATE_PAUSED:
-        return '(Paused)';
-      case TrackPlayer.STATE_STOPPED:
-        return '(Stopped)';
-      case TrackPlayer.STATE_BUFFERING:
-        return '(Buffering)';
-      default:
-        return '';
-    }
+  async function togglePlayback() {
+    try {
+      const currentTrack = await TrackPlayer.getCurrentTrack();
+      if (currentTrack == null) {
+        skipToNext();
+      } else {
+        if (playbackState === TrackPlayer.STATE_PAUSED) {
+          await TrackPlayer.play();
+        } else {
+          await TrackPlayer.pause();
+        }
+      }
+    } catch (_) {}
   }
 
   return (
-    <View style={{flex: 1.5}}>
-      <View style={{flex: 1, backgroundColor: 'powderblue'}}>
-        <Text>Queue...</Text>
+    <View style={{flex: 2}}>
+      <View style={{flex: 1, backgroundColor: 'lightgrey'}}>
         <FlatList
           ref={(ref) => {
             this.flatListRef = ref;
           }}
-          data={render}
+          data={queue}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           renderItem={({item, index}) => (
-            <SwipeableRow item={item} index={index} />
+            <AppleStyleSwipeableRow item={item}>
+              <RectButton
+                style={styles.rectButton}
+                onPress={() => playIdx(index)}>
+                <Text style={styles.fromText}>{item.title}</Text>
+                <Text style={styles.messageText}>{item.artist}</Text>
+              </RectButton>
+            </AppleStyleSwipeableRow>
           )}
           keyExtractor={(item, index) => `message ${index}`}
         />
-        {/* <FlatList
-          data={render}
-          renderItem={({item}) => (
-            <Button
-              title={`${item.title} by ${item.artist}`}
-              onPress={() => TrackPlayer.skip(item.id)}
+      </View>
+      <View style={{flex: 0.5, backgroundColor: 'darkgrey'}}>
+        <View style={styles.progress}>
+          <View style={{flex: progress.position, backgroundColor: 'red'}} />
+          <View
+            style={{
+              flex: progress.duration - progress.position,
+              backgroundColor: 'grey',
+            }}
+          />
+        </View>
+        <View style={styles.controlButtonContainer}>
+          <Icon
+            style={styles.controls}
+            name="shuffle"
+            size={30}
+            onPress={() => setShuffle(!shuffle)}
+            color={shuffle ? 'red' : 'black'}
+          />
+          <Icon
+            style={styles.controls}
+            name="skip-previous"
+            size={30}
+            onPress={() => skipToPrevious()}
+          />
+          {playbackState === TrackPlayer.STATE_PAUSED ? (
+            <Icon
+              style={styles.controls}
+              name="play"
+              size={30}
+              onPress={() => togglePlayback()}
+            />
+          ) : (
+            <Icon
+              style={styles.controls}
+              name="pause"
+              size={30}
+              onPress={() => togglePlayback()}
             />
           )}
-        /> */}
-      </View>
-      <View style={{flex: 0.5, backgroundColor: 'skyblue'}}>
-        <ProgressBar />
-        <View style={styles.controls}>
-          <Switch
-            trackColor={{false: '#767577', true: '#81b0ff'}}
-            thumbColor={shuffle ? '#f5dd4b' : '#f4f3f4'}
-            ios_backgroundColor="#3e3e3e"
-            onValueChange={() => setShuffle(!shuffle)}
-            value={shuffle}
+          <Icon
+            style={styles.controls}
+            name="skip-next"
+            size={30}
+            onPress={() => skipToNext()}
           />
-          <Button title={'<<'} onPress={() => skipToPrevious()} />
-          {middleButton}
-          <Button title={'>>'} onPress={() => skipToNext()} />
+          <MaertialIcon
+            style={styles.controls}
+            name="loop"
+            size={30}
+            onPress={() => setLoop(!loop)}
+            color={loop ? 'red' : 'black'}
+          />
         </View>
-        <Text style={styles.state}>
-          {trackTitle
-            ? `${trackTitle} by ${trackArtist} ${getStateName(playbackState)}`
-            : ''}
-        </Text>
       </View>
     </View>
   );
@@ -254,7 +257,7 @@ const styles = StyleSheet.create({
   },
   progress: {
     height: 1,
-    width: '90%',
+    width: '100%',
     marginTop: 10,
     flexDirection: 'row',
   },
@@ -267,9 +270,11 @@ const styles = StyleSheet.create({
   controls: {
     marginVertical: 20,
     flexDirection: 'row',
+    flex: 1,
   },
   controlButtonContainer: {
     flex: 1,
+    flexDirection: 'row',
   },
   controlButtonText: {
     fontSize: 18,

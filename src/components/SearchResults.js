@@ -1,16 +1,30 @@
 import {FlatList, StyleSheet, Text, View, Button} from 'react-native';
 import React, {useContext} from 'react';
 import {GlobalContext} from '../state/GlobalState';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: 22,
   },
+  itemContainer: {
+    flexDirection: 'row',
+    flexWrap: 'nowrap',
+    overflow: 'hidden',
+  },
   item: {
     padding: 10,
-    fontSize: 18,
     height: 44,
+    width: '90%',
+  },
+  button: {
+    fontSize: 25,
+    textAlignVertical: 'bottom',
+  },
+  separator: {
+    backgroundColor: 'rgb(200, 199, 204)',
+    height: StyleSheet.hairlineWidth,
   },
 });
 
@@ -28,8 +42,18 @@ const SearchResults = (props) => {
       <View style={styles.container}>
         <FlatList
           data={props.results}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
           renderItem={({item}) => (
-            <Button style={styles.item} title={`${item.title} by ${item.artist}`} onPress={() => addToQueue(item)} />
+            <View style={styles.itemContainer}>
+              <Text
+                style={styles.item}>{`${item.title} by ${item.artist}`}</Text>
+              <Icon
+                style={styles.button}
+                name="playlist-add"
+                size={20}
+                onPress={() => addToQueue(item)}
+              />
+            </View>
           )}
         />
       </View>
