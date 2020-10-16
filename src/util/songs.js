@@ -1,44 +1,30 @@
+import {Storage} from 'aws-amplify';
+
 export function listSongs() {
-  return Promise.resolve([
-    {
-      id: '1111',
-      url:
-        'https://drive.google.com/uc?export=download&id=1AjPwylDJgR8DOnmJWeRgZzjsohi-7ekj',
-      title: 'Longing',
-      artist: 'Frankie Four Fingers',
-      artwork: 'https://i.picsum.photos/id/100/200/200.jpg',
-      duration: 143,
-    },
-    {
-      id: '2222',
-      url:
-        'https://drive.google.com/uc?export=download&id=1VM9_umeyzJn0v1pRzR1BSm9y3IhZ3c0E',
-      title: 'Soul Searching (Demo)',
-      artist: 'Jake the Snake',
-      artwork: 'https://i.picsum.photos/id/200/200/200.jpg',
-      duration: 77,
-    },
-    {
-      id: '3333',
-      url:
-        'https://drive.google.com/uc?export=download&id=1bmvPOy2IVbkUROgm0dqiZry_miiL4OqI',
-      title: 'Lullaby (Demo)',
-      artist: 'Bobby Buzzkill',
-      artwork: 'https://i.picsum.photos/id/300/200/200.jpg',
-      duration: 71,
-    },
-    {
-      id: '4444',
-      url:
-        'https://drive.google.com/uc?export=download&id=1V-c_WmanMA9i5BwfkmTs-605BQDsfyzC',
-      title: 'Rhythm City (Demo)',
-      artist: 'Bullet Tooth Tony',
-      artwork: 'https://i.picsum.photos/id/400/200/200.jpg',
-      duration: 106,
-    },
-  ]);
+  return Promise.all(
+    'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+      .split('')
+      .map((item) => Storage.list(`songs/${item}`, {level: 'private'})),
+  ).then((responses) => {
+    let songs = [];
+    responses.forEach((response) => {
+      response.forEach((item) => {
+        songs.push(parseInfo(item.key));
+      });
+    });
+    return songs;
+  });
+}
+
+export function parseInfo(key) {
+  const match = key.match(/^songs\/([^/]+)\/(.+)\..+$/);
+  return match
+    ? {key: key, artist: match[1], title: match[2], id: key}
+    : {artist: 'unknown', title: key};
 }
 
 export function fetchSongUrl(key) {
-  return Promise.resolve(key);
+  return Storage.get(key, {level: 'private', expires: 86400}).then(
+    (result) => result,
+  );
 }

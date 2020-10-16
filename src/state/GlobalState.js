@@ -1,3 +1,4 @@
+import {actionIcon} from 'aws-amplify';
 import React, {useReducer} from 'react';
 export const GlobalContext = React.createContext();
 
@@ -22,6 +23,11 @@ const reducer = (state, action) => {
         ...state,
         addToQueue: action.song,
       };
+    case 'removeFromQueue':
+      return {
+        ...state,
+        queue: state.queue.filter((x) => x.key !== action.key),
+      };
     case 'setPlaylists':
       return {
         ...state,
@@ -34,7 +40,7 @@ const reducer = (state, action) => {
       };
     }
     case 'setQueue':
-      console.log("STATE UPDATE FOR QUEUE");
+      console.log('STATE UPDATE FOR QUEUE');
       return {
         ...state,
         queue: action.queue,

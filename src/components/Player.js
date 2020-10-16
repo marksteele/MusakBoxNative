@@ -7,15 +7,21 @@ import TrackPlayer, {
   usePlaybackState,
   useTrackPlayerEvents,
 } from 'react-native-track-player';
-import {
-  StyleSheet,
-  FlatList,
-  Button,
-  Text,
-  Switch,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import {StyleSheet, Button, Text, Switch, View} from 'react-native';
+import {FlatList, RectButton} from 'react-native-gesture-handler';
+import AppleStyleSwipeableRow from './AppleStyleSwipeableRow';
+import {fetchSongUrl} from '../util/songs.js';
+
+const SwipeableRow = ({item}) => (
+  <AppleStyleSwipeableRow item={item}>
+    <RectButton
+      style={styles.rectButton}
+      onPress={() => TrackPlayer.skip(item.id)}>
+      <Text style={styles.fromText}>{item.title}</Text>
+      <Text style={styles.messageText}>{item.artist}</Text>
+    </RectButton>
+  </AppleStyleSwipeableRow>
+);
 
 function ProgressBar() {
   const progress = useTrackPlayerProgress();
@@ -47,6 +53,10 @@ export default function Player(props) {
       const {title, artist} = track || {};
       setTrackTitle(title);
       setTrackArtist(artist);
+      if (Object.keys(track).length > 0) {
+        const idx = render.findIndex((x) => x.id === track.id);
+        this.flatListRef.scrollToIndex({animated: true, index: idx});
+      }
     }
   });
   async () => {
@@ -71,22 +81,29 @@ export default function Player(props) {
     if (addToQueue !== undefined && Object.keys(addToQueue).length !== 0) {
       TrackPlayer.getQueue().then((queueSongs) => {
         const qSet = new Set([...queueSongs.map((x) => x.id)]);
-        console.log(qSet);
         if (!qSet.has(addToQueue.id)) {
-          console.log('SET DOES NOT HAS ' + addToQueue.id);
           setRender([...queueSongs, addToQueue]);
-          TrackPlayer.add(addToQueue)
-            .then((res) => {
-              console.log('Added track');
-              dispatch({type: 'addToQueue', song: {}});
-            })
-            .catch((err) => console.log(err));
-        } else {
-          console.log('SET HAS ' + addToQueue.id);
+          fetchSongUrl(addToQueue.key).then((url) => {
+            TrackPlayer.add({...addToQueue, url: url})
+              .then((res) => {
+                dispatch({type: 'addToQueue', song: {}});
+              })
+              .catch((err) => console.log(err));
+          });
         }
       });
     }
   }, [addToQueue]);
+
+  const lookupUrls = (songs) => {
+    return Promise.all(
+      songs.map((x) => {
+        return fetchSongUrl(x.key).then((res) => {
+          return {...x, url: res};
+        });
+      }),
+    ).then((results) => results);
+  };
 
   useEffect(() => {
     if (Array.isArray(queue)) {
@@ -94,16 +111,12 @@ export default function Player(props) {
       setRender(queue);
       TrackPlayer.reset()
         .then(() => {
-          console.log('RESET QUEUE ON PLAYER');
           if (queue.length > 0) {
-            console.log('Added tracks');
-            return TrackPlayer.add(queue);
+            return lookupUrls(queue).then((songs) => {
+              return TrackPlayer.add(songs);
+            });
           }
           return Promise.resolve();
-        })
-        .then(() => {
-          console.log('Queue now contains: ');
-          console.log(queue);
         })
         .catch((err) => console.log(err));
     }
@@ -112,9 +125,7 @@ export default function Player(props) {
   async function skipToNext() {
     if (shuffle) {
       try {
-        const q = await TrackPlayer.getQueue();
-        const randomId = q[Math.floor(Math.random() * q.length)].id;
-        console.log('Next random song is: ' + randomId);
+        const randomId = render[Math.floor(Math.random() * render.length)].id;
         await TrackPlayer.skip(randomId);
       } catch (_) {}
     } else {
@@ -122,6 +133,10 @@ export default function Player(props) {
         await TrackPlayer.skipToNext();
       } catch (_) {}
     }
+    this.flatListRef.scrollToItem({
+      animated: true,
+      item: await TrackPlayer.getCurrentTrack(),
+    });
   }
 
   async function skipToPrevious() {
@@ -157,24 +172,35 @@ export default function Player(props) {
 
   function getStateName(state) {
     switch (state) {
-      case TrackPlayer.STATE_NONE:
-        return 'None';
       case TrackPlayer.STATE_PLAYING:
-        return 'Playing';
+        return '(Playing)';
       case TrackPlayer.STATE_PAUSED:
-        return 'Paused';
+        return '(Paused)';
       case TrackPlayer.STATE_STOPPED:
-        return 'Stopped';
+        return '(Stopped)';
       case TrackPlayer.STATE_BUFFERING:
-        return 'Buffering';
+        return '(Buffering)';
+      default:
+        return '';
     }
   }
 
   return (
-    <View style={{flex: 1}}>
+    <View style={{flex: 1.5}}>
       <View style={{flex: 1, backgroundColor: 'powderblue'}}>
         <Text>Queue...</Text>
         <FlatList
+          ref={(ref) => {
+            this.flatListRef = ref;
+          }}
+          data={render}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          renderItem={({item, index}) => (
+            <SwipeableRow item={item} index={index} />
+          )}
+          keyExtractor={(item, index) => `message ${index}`}
+        />
+        {/* <FlatList
           data={render}
           renderItem={({item}) => (
             <Button
@@ -182,7 +208,7 @@ export default function Player(props) {
               onPress={() => TrackPlayer.skip(item.id)}
             />
           )}
-        />
+        /> */}
       </View>
       <View style={{flex: 0.5, backgroundColor: 'skyblue'}}>
         <ProgressBar />
@@ -199,8 +225,9 @@ export default function Player(props) {
           <Button title={'>>'} onPress={() => skipToNext()} />
         </View>
         <Text style={styles.state}>
-          {getStateName(playbackState)}{' '}
-          {trackTitle ? `${trackTitle} by ${trackArtist}` : ''}
+          {trackTitle
+            ? `${trackTitle} by ${trackArtist} ${getStateName(playbackState)}`
+            : ''}
         </Text>
       </View>
     </View>
@@ -251,5 +278,26 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: 22,
+  },
+  rectButton: {
+    flex: 1,
+    height: 80,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    justifyContent: 'space-between',
+    flexDirection: 'column',
+    backgroundColor: 'white',
+  },
+  separator: {
+    backgroundColor: 'rgb(200, 199, 204)',
+    height: StyleSheet.hairlineWidth,
+  },
+  fromText: {
+    fontWeight: 'bold',
+    backgroundColor: 'transparent',
+  },
+  messageText: {
+    color: '#999',
+    backgroundColor: 'transparent',
   },
 });
