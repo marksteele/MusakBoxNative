@@ -5,10 +5,10 @@ import {dirname} from 'react-native-path';
 const dirs = RNFetchBlob.fs.dirs;
 const basePath = `${dirs.CacheDir}/Emusak`;
 
-export function fetchSong(key) {
+function safePaths(key) {
   const safePath = `${basePath}/${key.replace(/[ !@#$%^&*()-+=]/g, '_')}`;
   const cachePath = dirname(safePath);
-  const result = `file://${safePath}`;
+  const resultPath = `file://${safePath}`;
   return RNFetchBlob.fs
     .exists(cachePath)
     .then((exists) => {
@@ -18,40 +18,54 @@ export function fetchSong(key) {
       return Promise.resolve();
     })
     .then(() => {
-      return RNFetchBlob.fs.exists(safePath).then((exists) => {
-        if (exists) {
-          return result;
-        } else {
-          return fetchSongUrl(key).then((url) => {
-            return RNFetchBlob.config({
-              path: safePath,
-            })
-              .fetch('GET', url)
-              .then((res) => {
-                if (res.info().status === 200) {
-                  return result;
-                }
-                throw new Error(
-                  `Unable to download file: ${res.info().status}`,
-                );
-              });
-          });
-        }
-      });
+      return {safePath, resultPath};
     });
+}
+
+export function fetchFile(key) {
+  return safePaths(key).then(({safePath, resultPath}) => {
+    return fetchCacheFile(key)
+      .then((res) => res)
+      .catch(() => {
+        return fetchSongUrl(key).then((url) => {
+          return RNFetchBlob.config({
+            path: safePath,
+          })
+            .fetch('GET', url)
+            .then((res) => {
+              if (res.info().status === 200) {
+                return resultPath;
+              }
+              throw new Error(`Unable to download file: ${res.info().status}`);
+            });
+        });
+      });
+  });
+}
+
+export function fetchCacheFile(key) {
+  return safePaths(key).then(({safePath, resultPath}) => {
+    return RNFetchBlob.fs.exists(safePath).then((exists) => {
+      if (exists) {
+        console.log('Song file cache hit');
+        return resultPath;
+      }
+      console.log('Song file cache miss');
+      throw new Error('File not found');
+    });
+  });
 }
 
 export function cachePlaylist(songs) {
-  return Promise.all(songs.map((song) => fetchSong(song.key))).catch(() => {});
+  return Promise.all(songs.map((song) => fetchFile(song.key))).catch(() => {});
 }
 
-export function clearCache() {
-  RNFetchBlob.fs
-    .unlink(basePath)
-    .then(() => {
-      alert('Cache cleared');
-    })
-    .catch((err) => {
-      alert('Could not clear cache');
-    });
+export async function isCached(key) {
+  const {safePath, _} = safePaths(key);
+  return await RNFetchBlob.fs.exists(safePath);
+}
+
+export function clearSongFileCache() {
+  console.log('Clearing all cached songs');
+  return RNFetchBlob.fs.unlink(basePath);
 }

@@ -10,23 +10,34 @@ import TrackPlayer, {
 import {StyleSheet, Text, View} from 'react-native';
 import {FlatList, RectButton} from 'react-native-gesture-handler';
 import AppleStyleSwipeableRow from './AppleStyleSwipeableRow';
-import {fetchSong} from '../util/file.js';
+import {fetchCacheFile, fetchFile} from '../util/file.js';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
+import NetInfo from '@react-native-community/netinfo';
 
 export default function Player(props) {
   const playbackState = usePlaybackState();
-  const [{queue}] = useContext(GlobalContext);
+  const [{queue, downloadOnlyOnWifi}] = useContext(GlobalContext);
   const [shuffle, setShuffle] = useState(false);
   const [playing, setPlaying] = useState(0);
   const [loop, setLoop] = useState(false);
   const progress = useTrackPlayerProgress();
+  const [connected, setConnected] = useState(false);
+  const [connectionType, setConnectionType] = useState(null);
 
   useTrackPlayerEvents(['playback-queue-ended'], async (event) => {
     if (event.type === TrackPlayer.TrackPlayerEvents.PLAYBACK_QUEUE_ENDED) {
       skipToNext();
     }
   });
+
+  useEffect(() => {
+    NetInfo.addEventListener((conn) => {
+      setConnectionType(conn.type);
+      setConnected(conn.isConnected);
+    });
+  }, []);
+
   async () => {
     await TrackPlayer.setupPlayer({});
     await TrackPlayer.updateOptions({
@@ -45,8 +56,14 @@ export default function Player(props) {
     });
   };
 
-  async function playIdx(idx) {
+  async function playIdx(idx, dir) {
+    let url;
     try {
+      if (!connected || (downloadOnlyOnWifi && connectionType !== 'wifi')) {
+        url = await fetchCacheFile(queue[idx].key);
+      } else {
+        url = await fetchFile(queue[idx].key);
+      }
       await TrackPlayer.reset();
       this.flatListRef.scrollToIndex({
         animated: false,
@@ -54,14 +71,17 @@ export default function Player(props) {
       });
       await TrackPlayer.add({
         ...queue[idx],
-        url: await fetchSong(queue[idx].key),
+        url: url,
       });
       await TrackPlayer.play();
       setPlaying(idx);
-    } catch (_) {}
+    } catch (err) {
+      console.log('THREW! LOOP! ' + idx);
+      return dir === 'next' ? skipToNext(idx) : skipToPrevious(idx);
+    }
   }
 
-  async function skipToNext() {
+  async function skipToNext(current) {
     let idx;
     if (Array.isArray(queue) && queue.length > 0) {
       if (shuffle) {
@@ -70,20 +90,20 @@ export default function Player(props) {
       } else {
         if (loop) {
           // Loooping. If at end, wrap
-          idx = playing === queue.length - 1 ? 0 : playing + 1;
+          idx = current === queue.length - 1 ? 0 : current + 1;
         } else {
           // Not looping. If at end, stop.
-          if (playing === queue.length - 1) {
+          if (current === queue.length - 1) {
             return;
           }
-          idx = playing + 1;
+          idx = current + 1;
         }
       }
-      await playIdx(idx);
+      await playIdx(idx, 'next');
     }
   }
 
-  async function skipToPrevious() {
+  async function skipToPrevious(current) {
     let idx;
     if (Array.isArray(queue) && queue.length > 0) {
       if (shuffle) {
@@ -92,16 +112,16 @@ export default function Player(props) {
       } else {
         if (loop) {
           // Loooping. If at start, wrap
-          idx = playing > 0 ? playing - 1 : queue.length - 1;
+          idx = current > 0 ? current - 1 : queue.length - 1;
         } else {
           // Not looping. If at start, stop.
-          if (playing === 0) {
+          if (current === 0) {
             return;
           }
-          idx = playing - 1;
+          idx = current - 1;
         }
       }
-      await playIdx(idx);
+      await playIdx(idx, 'prev');
     }
   }
 
@@ -162,14 +182,18 @@ export default function Player(props) {
           <Icon
             name="skip-previous"
             size={30}
-            onPress={() => skipToPrevious()}
+            onPress={() => skipToPrevious(playing)}
           />
           {playbackState === TrackPlayer.STATE_PAUSED ? (
             <Icon name="play" size={30} onPress={() => togglePlayback()} />
           ) : (
             <Icon name="pause" size={30} onPress={() => togglePlayback()} />
           )}
-          <Icon name="skip-next" size={30} onPress={() => skipToNext()} />
+          <Icon
+            name="skip-next"
+            size={30}
+            onPress={() => skipToNext(playing)}
+          />
           <MaterialIcon
             name="loop"
             size={30}

@@ -1,30 +1,41 @@
 import {GlobalContext} from '../state/GlobalState';
 import React, {useContext} from 'react';
-import {StyleSheet, Text, ScrollView, View} from 'react-native';
+import {StyleSheet, Text, ScrollView, View, Switch} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
 import {Auth} from 'aws-amplify';
-import {clearCache, cachePlaylist} from '../util/file';
+import {clearSongFileCache, cachePlaylist} from '../util/file';
+import AsyncStorage from '@react-native-community/async-storage';
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: 22,
     flexDirection: 'row',
+    paddingRight: 10,
   },
   icon: {
     width: '10%',
   },
   text: {
     fontSize: 20,
+    paddingRight: 20,
   },
 });
 
 const SettingsScreen = ({navigation}) => {
-  const [{queue}, dispatch] = useContext(GlobalContext);
+  const [{queue, downloadOnlyOnWifi}, dispatch] = useContext(GlobalContext);
 
   const logout = () => {
     Auth.signOut();
+  };
+
+  const clearCache = () => {
+    clearSongFileCache()
+      .then(() => AsyncStorage.clear())
+      .then(() => {
+        dispatch({type: 'setRefresh', refresh: true});
+      });
   };
 
   return (
@@ -34,6 +45,21 @@ const SettingsScreen = ({navigation}) => {
         <Text style={styles.text} onPress={() => cachePlaylist(queue)}>
           Cache queue
         </Text>
+      </View>
+      <View style={styles.container}>
+        <MaterialIcon style={styles.icon} name="cloud-download" size={30} />
+        <Text style={styles.text} onPress={() => cachePlaylist(queue)}>
+          Download only on wifi
+        </Text>
+        <Switch
+          onValueChange={() =>
+            dispatch({
+              type: 'setDownloadOnlyOnWifi',
+              downloadOnlyOnWifi: !downloadOnlyOnWifi,
+            })
+          }
+          value={downloadOnlyOnWifi}
+        />
       </View>
       <View style={styles.container}>
         <Icon style={styles.icon} name="notification-clear-all" size={30} />

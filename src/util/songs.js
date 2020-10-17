@@ -1,18 +1,32 @@
 import {Storage} from 'aws-amplify';
+import AsyncStorage from '@react-native-community/async-storage';
 
 export function listSongs() {
-  return Promise.all(
-    'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-      .split('')
-      .map((item) => Storage.list(`songs/${item}`, {level: 'private'})),
-  ).then((responses) => {
-    let songs = [];
-    responses.forEach((response) => {
-      response.forEach((item) => {
-        songs.push(parseInfo(item.key));
+  return AsyncStorage.getItem('songs').then((songsCached) => {
+    if (songsCached !== null) {
+      console.log("Song list cache hit");
+      return JSON.parse(songsCached);
+    }
+    console.log("Song list cache miss");
+    return Promise.all(
+      'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+        .split('')
+        .map((item) => Storage.list(`songs/${item}`, {level: 'private'})),
+    )
+      .then((responses) => {
+        let songs = [];
+        responses.forEach((response) => {
+          response.forEach((item) => {
+            songs.push(parseInfo(item.key));
+          });
+        });
+        return songs;
+      })
+      .then((songs) => {
+        return AsyncStorage.setItem('songs', JSON.stringify(songs)).then(
+          () => songs,
+        );
       });
-    });
-    return songs;
   });
 }
 

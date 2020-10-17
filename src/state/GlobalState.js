@@ -9,10 +9,21 @@ const initialState = {
   artists: [], // Lists of artists
   search: {},
   queue: [],
+  downloadOnlyOnWifi: false,
 };
 
 const reducer = (state, action) => {
   switch (action.type) {
+    case 'setRefresh':
+      return {
+        ...state,
+        refresh: action.refresh,
+      };
+    case 'setDownloadOnlyOnWifi':
+      return {
+        ...state,
+        downloadOnlyOnWifi: action.downloadOnlyOnWifi,
+      };
     case 'setSongList':
       return {
         ...state,

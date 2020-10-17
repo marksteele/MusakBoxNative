@@ -6,17 +6,28 @@ import {fetchPlaylists} from '../util/playlists';
 import {listSongs} from '../util/songs';
 
 const AppContainer = (props) => {
-  const [{}, dispatch] = useContext(GlobalContext);
+  const [{refresh}, dispatch] = useContext(GlobalContext);
 
   // Initial data load
   useEffect(() => {
+    refreshMeta();
+  }, []);
+
+  useEffect(() => {
+    if (refresh) {
+      dispatch({type: 'setRefresh', refresh: false});
+      refreshMeta();
+    }
+  }, [refresh]);
+
+  const refreshMeta = () => {
     listSongs().then((songs) => {
       dispatch({type: 'setSongList', songs: songs});
     });
     fetchPlaylists().then((playlists) => {
       dispatch({type: 'setPlaylists', playlists: playlists});
     });
-  }, []);
+  };
 
   return (
     <>
