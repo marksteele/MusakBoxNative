@@ -31,6 +31,11 @@ const HomeScreen = ({navigation}) => {
         size={40}
         onPress={() => navigation.navigate('Playlists')}
       />
+      <MaterialIcon
+        name="settings"
+        size={40}
+        onPress={() => navigation.navigate('Settings')}
+      />
     </View>
   );
 };

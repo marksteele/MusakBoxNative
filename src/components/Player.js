@@ -10,9 +10,9 @@ import TrackPlayer, {
 import {StyleSheet, Text, View} from 'react-native';
 import {FlatList, RectButton} from 'react-native-gesture-handler';
 import AppleStyleSwipeableRow from './AppleStyleSwipeableRow';
-import {fetchSongUrl} from '../util/songs.js';
+import {fetchSong} from '../util/file.js';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import MaertialIcon from 'react-native-vector-icons/MaterialIcons';
+import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
 
 export default function Player(props) {
   const playbackState = usePlaybackState();
@@ -22,7 +22,6 @@ export default function Player(props) {
   const [loop, setLoop] = useState(false);
   const progress = useTrackPlayerProgress();
 
-  // Will fire when songs in queue done. We'll keep only 1 song in queue
   useTrackPlayerEvents(['playback-queue-ended'], async (event) => {
     if (event.type === TrackPlayer.TrackPlayerEvents.PLAYBACK_QUEUE_ENDED) {
       skipToNext();
@@ -46,55 +45,19 @@ export default function Player(props) {
     });
   };
 
-  const lookupUrls = (songs) => {
-    return Promise.all(
-      songs.map((x) => {
-        return fetchSongUrl(x.key).then((res) => {
-          return {...x, url: res};
-        });
-      }),
-    ).then((results) => results);
-  };
-
-  useEffect(() => {
-    if (Array.isArray(queue)) {
-      TrackPlayer.reset()
-        .then(() => {
-          if (queue.length > 0) {
-            return lookupUrls(queue).then((songs) => {
-              return TrackPlayer.add(songs);
-            });
-          }
-          return Promise.resolve();
-        })
-        .catch((err) => console.log(err));
-    }
-  }, [queue]);
-
   async function playIdx(idx) {
-    console.log(`Attempting to play ${queue[idx].key} - ${idx}`);
     try {
-      console.log('RESSETTING PLAYER...');
       await TrackPlayer.reset();
-      console.log('RESSETTING PLAYER...DONE');
-      console.log('SCROLLING...');
       this.flatListRef.scrollToIndex({
-        animated: true,
+        animated: false,
         index: idx,
       });
-      console.log('SCROLLING...DONE');
-      console.log('ADDING TRACK');
       await TrackPlayer.add({
         ...queue[idx],
-        url: await fetchSongUrl(queue[idx].key),
+        url: await fetchSong(queue[idx].key),
       });
-      console.log('ADDRING TRACK DONE');
-      console.log('PLAYING...');
       await TrackPlayer.play();
-      console.log('PLAYING...DONE');
-      console.log('SETTING CURRENT INDEX TO STATE...');
       setPlaying(idx);
-      console.log('SETTING CURRENT INDEX TO STATE...DONE');
     } catch (_) {}
   }
 
@@ -171,8 +134,8 @@ export default function Player(props) {
               <RectButton
                 style={styles.rectButton}
                 onPress={() => playIdx(index)}>
-                <Text style={styles.fromText}>{item.title}</Text>
-                <Text style={styles.messageText}>{item.artist}</Text>
+                <Text style={styles.title}>{item.title}</Text>
+                <Text style={styles.artist}>{item.artist}</Text>
               </RectButton>
             </AppleStyleSwipeableRow>
           )}
@@ -191,41 +154,23 @@ export default function Player(props) {
         </View>
         <View style={styles.controlButtonContainer}>
           <Icon
-            style={styles.controls}
             name="shuffle"
             size={30}
             onPress={() => setShuffle(!shuffle)}
             color={shuffle ? 'red' : 'black'}
           />
           <Icon
-            style={styles.controls}
             name="skip-previous"
             size={30}
             onPress={() => skipToPrevious()}
           />
           {playbackState === TrackPlayer.STATE_PAUSED ? (
-            <Icon
-              style={styles.controls}
-              name="play"
-              size={30}
-              onPress={() => togglePlayback()}
-            />
+            <Icon name="play" size={30} onPress={() => togglePlayback()} />
           ) : (
-            <Icon
-              style={styles.controls}
-              name="pause"
-              size={30}
-              onPress={() => togglePlayback()}
-            />
+            <Icon name="pause" size={30} onPress={() => togglePlayback()} />
           )}
-          <Icon
-            style={styles.controls}
-            name="skip-next"
-            size={30}
-            onPress={() => skipToNext()}
-          />
-          <MaertialIcon
-            style={styles.controls}
+          <Icon name="skip-next" size={30} onPress={() => skipToNext()} />
+          <MaterialIcon
             name="loop"
             size={30}
             onPress={() => setLoop(!loop)}
@@ -249,40 +194,18 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     shadowOffset: {width: 0, height: 1},
   },
-  cover: {
-    width: 140,
-    height: 140,
-    marginTop: 20,
-    backgroundColor: 'grey',
-  },
   progress: {
     height: 1,
     width: '100%',
     marginTop: 10,
     flexDirection: 'row',
   },
-  title: {
-    marginTop: 10,
-  },
-  artist: {
-    fontWeight: 'bold',
-  },
-  controls: {
-    marginVertical: 20,
-    flexDirection: 'row',
-    flex: 1,
-  },
   controlButtonContainer: {
     flex: 1,
-    flexDirection: 'row',
-  },
-  controlButtonText: {
-    fontSize: 18,
-    textAlign: 'center',
-  },
-  container: {
-    flex: 1,
     paddingTop: 22,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-evenly',
   },
   rectButton: {
     flex: 1,
@@ -297,11 +220,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgb(200, 199, 204)',
     height: StyleSheet.hairlineWidth,
   },
-  fromText: {
+  title: {
     fontWeight: 'bold',
     backgroundColor: 'transparent',
   },
-  messageText: {
+  artist: {
     color: '#999',
     backgroundColor: 'transparent',
   },

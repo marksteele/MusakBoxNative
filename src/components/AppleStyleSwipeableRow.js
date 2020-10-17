@@ -1,6 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
 import React, {useContext, useRef} from 'react';
-import {Animated, StyleSheet, Text, View, I18nManager} from 'react-native';
+import {Animated, StyleSheet, View, I18nManager} from 'react-native';
 import {GlobalContext} from '../state/GlobalState';
 import {RectButton} from 'react-native-gesture-handler';
 import Swipeable from 'react-native-gesture-handler/Swipeable';

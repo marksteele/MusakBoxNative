@@ -187,6 +187,7 @@
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
 				94F35AE3AAD5137A5299B5AD /* Pods */,
 				E0ABBA282538D67A00C858F1 /* MusakBoxNative-Bridging-Header.h */,
+				B5DB0BA460F04B6DA4D82A4B /* Resources */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -241,6 +242,14 @@
 			);
 			name = Fonts;
 			sourceTree = "<group>";
+		};
+		B5DB0BA460F04B6DA4D82A4B /* Resources */ = {
+			isa = "PBXGroup";
+			children = (
+			);
+			name = Resources;
+			sourceTree = "<group>";
+			path = "";
 		};
 /* End PBXGroup section */
 
