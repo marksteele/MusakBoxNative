@@ -1,4 +1,3 @@
-import {actionIcon} from 'aws-amplify';
 import React, {useReducer} from 'react';
 export const GlobalContext = React.createContext();
 
@@ -9,11 +8,17 @@ const initialState = {
   artists: [], // Lists of artists
   search: {},
   queue: [],
-  downloadOnlyOnWifi: false,
+  downloadOnlyOnWifi: true,
+  loading: true,
 };
 
 const reducer = (state, action) => {
   switch (action.type) {
+    case 'setLoading':
+      return {
+        ...state,
+        loading: action.loading,
+      };
     case 'setRefresh':
       return {
         ...state,

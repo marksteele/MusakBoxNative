@@ -9,26 +9,41 @@
 
 import TrackPlayer from 'react-native-track-player';
 
-module.exports = async function() {
+module.exports = async function () {
+  await TrackPlayer.setupPlayer({});
+  await TrackPlayer.updateOptions({
+    stopWithApp: false,
+    capabilities: [
+      TrackPlayer.CAPABILITY_PLAY,
+      TrackPlayer.CAPABILITY_PAUSE,
+      TrackPlayer.CAPABILITY_SKIP_TO_NEXT,
+      TrackPlayer.CAPABILITY_SKIP_TO_PREVIOUS,
+      TrackPlayer.CAPABILITY_STOP,
+    ],
+    compactCapabilities: [
+      TrackPlayer.CAPABILITY_PLAY,
+      TrackPlayer.CAPABILITY_PAUSE,
+    ],
+    iosCategoryOptions: ['mixWithOthers'],
+  });
 
   TrackPlayer.addEventListener('remote-play', () => {
-    TrackPlayer.play()
-  })
+    TrackPlayer.play();
+  });
 
   TrackPlayer.addEventListener('remote-pause', () => {
-    TrackPlayer.pause()
+    TrackPlayer.pause();
   });
 
   TrackPlayer.addEventListener('remote-next', () => {
-    TrackPlayer.skipToNext()
+    TrackPlayer.skipToNext();
   });
 
   TrackPlayer.addEventListener('remote-previous', () => {
-    TrackPlayer.skipToPrevious()
+    TrackPlayer.skipToPrevious();
   });
 
   TrackPlayer.addEventListener('remote-stop', () => {
-    TrackPlayer.destroy()
+    TrackPlayer.destroy();
   });
-
 };

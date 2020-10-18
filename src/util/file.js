@@ -1,6 +1,7 @@
 import RNFetchBlob from 'rn-fetch-blob';
 import {fetchSongUrl} from './songs';
 import {dirname} from 'react-native-path';
+import asyncPool from 'tiny-async-pool';
 
 const dirs = RNFetchBlob.fs.dirs;
 const basePath = `${dirs.CacheDir}/Emusak`;
@@ -47,17 +48,21 @@ export function fetchCacheFile(key) {
   return safePaths(key).then(({safePath, resultPath}) => {
     return RNFetchBlob.fs.exists(safePath).then((exists) => {
       if (exists) {
-        console.log('Song file cache hit');
+        console.log('Song file cache hit: ' + key);
         return resultPath;
       }
-      console.log('Song file cache miss');
+      console.log('Song file cache miss: ' + key);
       throw new Error('File not found');
     });
   });
 }
 
-export function cachePlaylist(songs) {
-  return Promise.all(songs.map((song) => fetchFile(song.key))).catch(() => {});
+export async function cachePlaylist(songs) {
+  await asyncPool(
+    2,
+    songs.map((song) => song.key),
+    fetchFile,
+  );
 }
 
 export async function isCached(key) {

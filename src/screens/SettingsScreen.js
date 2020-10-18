@@ -30,27 +30,30 @@ const SettingsScreen = ({navigation}) => {
     Auth.signOut();
   };
 
-  const clearCache = () => {
-    clearSongFileCache()
-      .then(() => AsyncStorage.clear())
-      .then(() => {
-        dispatch({type: 'setRefresh', refresh: true});
-      });
+  const clearCache = async () => {
+    dispatch({type: 'setLoading', loading: true});
+    await clearSongFileCache();
+    await AsyncStorage.clear();
+    dispatch({type: 'setRefresh', refresh: true});
+  };
+
+  const cacheCurrentQueue = async () => {
+    dispatch({type: 'setLoading', loading: true});
+    await cachePlaylist(queue);
+    dispatch({type: 'setLoading', loading: false});
   };
 
   return (
     <ScrollView>
       <View style={styles.container}>
         <MaterialIcon style={styles.icon} name="offline-bolt" size={30} />
-        <Text style={styles.text} onPress={() => cachePlaylist(queue)}>
+        <Text style={styles.text} onPress={() => cacheCurrentQueue()}>
           Cache queue
         </Text>
       </View>
       <View style={styles.container}>
         <MaterialIcon style={styles.icon} name="cloud-download" size={30} />
-        <Text style={styles.text} onPress={() => cachePlaylist(queue)}>
-          Download only on wifi
-        </Text>
+        <Text style={styles.text}>Download only on wifi</Text>
         <Switch
           onValueChange={() =>
             dispatch({

@@ -17,7 +17,7 @@ import NetInfo from '@react-native-community/netinfo';
 
 export default function Player(props) {
   const playbackState = usePlaybackState();
-  const [{queue, downloadOnlyOnWifi}] = useContext(GlobalContext);
+  const [{queue, downloadOnlyOnWifi}, dispatch] = useContext(GlobalContext);
   const [shuffle, setShuffle] = useState(false);
   const [playing, setPlaying] = useState(0);
   const [loop, setLoop] = useState(false);
@@ -27,7 +27,9 @@ export default function Player(props) {
 
   useTrackPlayerEvents(['playback-queue-ended'], async (event) => {
     if (event.type === TrackPlayer.TrackPlayerEvents.PLAYBACK_QUEUE_ENDED) {
-      skipToNext();
+      dispatch({type: 'setLoading', loading: true});
+      await skipToNext();
+      dispatch({type: 'setLoading', loading: false});
     }
   });
 
@@ -37,24 +39,6 @@ export default function Player(props) {
       setConnected(conn.isConnected);
     });
   }, []);
-
-  async () => {
-    await TrackPlayer.setupPlayer({});
-    await TrackPlayer.updateOptions({
-      stopWithApp: false,
-      capabilities: [
-        TrackPlayer.CAPABILITY_PLAY,
-        TrackPlayer.CAPABILITY_PAUSE,
-        TrackPlayer.CAPABILITY_SKIP_TO_NEXT,
-        TrackPlayer.CAPABILITY_SKIP_TO_PREVIOUS,
-        TrackPlayer.CAPABILITY_STOP,
-      ],
-      compactCapabilities: [
-        TrackPlayer.CAPABILITY_PLAY,
-        TrackPlayer.CAPABILITY_PAUSE,
-      ],
-    });
-  };
 
   async function playIdx(idx, dir) {
     let url;
@@ -99,7 +83,9 @@ export default function Player(props) {
           idx = current + 1;
         }
       }
+      dispatch({type: 'setLoading', loading: true});
       await playIdx(idx, 'next');
+      dispatch({type: 'setLoading', loading: false});
     }
   }
 
@@ -121,7 +107,9 @@ export default function Player(props) {
           idx = current - 1;
         }
       }
+      dispatch({type: 'setLoading', loading: true});
       await playIdx(idx, 'prev');
+      dispatch({type: 'setLoading', loading: false});
     }
   }
 
@@ -129,7 +117,7 @@ export default function Player(props) {
     try {
       const currentTrack = await TrackPlayer.getCurrentTrack();
       if (currentTrack == null) {
-        skipToNext();
+        await skipToNext(playing);
       } else {
         if (playbackState === TrackPlayer.STATE_PAUSED) {
           await TrackPlayer.play();
