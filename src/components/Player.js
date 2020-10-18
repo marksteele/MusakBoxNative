@@ -28,7 +28,7 @@ export default function Player(props) {
   useTrackPlayerEvents(['playback-queue-ended'], async (event) => {
     if (event.type === TrackPlayer.TrackPlayerEvents.PLAYBACK_QUEUE_ENDED) {
       dispatch({type: 'setLoading', loading: true});
-      await skipToNext();
+      await skipToNext(playing);
       dispatch({type: 'setLoading', loading: false});
     }
   });
