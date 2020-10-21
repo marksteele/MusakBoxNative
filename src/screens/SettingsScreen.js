@@ -27,6 +27,12 @@ const SettingsScreen = ({navigation}) => {
     dispatch({type: 'setRefresh', refresh: true});
   };
 
+  const clearMetaCache = async () => {
+    dispatch({type: 'setLoading', loading: true});
+    await AsyncStorage.clear();
+    dispatch({type: 'setRefresh', refresh: true});
+  };
+
   return (
     <ScrollView>
       <View style={styles.settingsContainer}>
@@ -46,6 +52,7 @@ const SettingsScreen = ({navigation}) => {
         <Text style={{...styles.primaryText, paddingLeft: 10}}>Shuffle</Text>
         <View style={{flex: 1, alignItems: 'flex-end'}}>
           <Switch
+            ios_backgroundColor={shuffle ? 'green' : 'red'}
             onValueChange={() =>
               dispatch({
                 type: 'setShuffle',
@@ -61,6 +68,7 @@ const SettingsScreen = ({navigation}) => {
         <Text style={{...styles.primaryText, paddingLeft: 10}}>Cache</Text>
         <View style={{flex: 1, alignItems: 'flex-end'}}>
           <Switch
+            ios_backgroundColor={cacheMode ? 'green' : 'red'}
             onValueChange={() =>
               dispatch({
                 type: 'setCacheMode',
@@ -78,6 +86,7 @@ const SettingsScreen = ({navigation}) => {
         </Text>
         <View style={{flex: 1, alignItems: 'flex-end'}}>
           <Switch
+            ios_backgroundColor={downloadOnlyOnWifi ? 'green' : 'red'}
             onValueChange={() =>
               dispatch({
                 type: 'setDownloadOnlyOnWifi',
@@ -94,6 +103,14 @@ const SettingsScreen = ({navigation}) => {
           style={{...styles.primaryText, paddingLeft: 10}}
           onPress={() => dispatch({type: 'setQueue', queue: []})}>
           Clear queue
+        </Text>
+      </View>
+      <View style={styles.settingsContainer}>
+        <MaterialIcon style={styles.icon} name="refresh" size={30} />
+        <Text
+          style={{...styles.primaryText, paddingLeft: 10}}
+          onPress={() => clearMetaCache()}>
+          Clear metadata cache
         </Text>
       </View>
       <View style={styles.settingsContainer}>

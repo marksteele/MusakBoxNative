@@ -40,7 +40,7 @@ const SearchScreen = ({navigation}) => {
   };
 
   return (
-    <View>
+    <View style={{flex: 1}}>
       <View style={styles.searchBoxContainer}>
         <TextInput
           autoCapitalize="none"

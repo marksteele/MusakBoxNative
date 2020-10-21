@@ -40,8 +40,18 @@ const EditPlaylistScreen = ({navigation}) => {
           value={selected}
           onChangeText={(text) => setSelected(text)}
         />
-        <MaterialIcon name="save" size={30} onPress={() => save()} />
-        <MaterialIcon name="delete" size={30} onPress={() => remove()} />
+        <MaterialIcon
+          style={styles.icon}
+          name="save"
+          size={30}
+          onPress={() => save()}
+        />
+        <MaterialIcon
+          style={styles.icon}
+          name="delete"
+          size={30}
+          onPress={() => remove()}
+        />
       </View>
       <FlatList
         style={styles.searchResultsContainer}

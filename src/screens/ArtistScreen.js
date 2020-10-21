@@ -14,7 +14,7 @@ const ArtistScreen = ({navigation}) => {
   };
 
   return (
-    <View>
+    <View style={{flex: 1}}>
       <FlatList
         data={artists.map((x) => {
           return {key: x};
@@ -28,7 +28,6 @@ const ArtistScreen = ({navigation}) => {
           </Text>
         )}
       />
-      <Text>Hello</Text>
     </View>
   );
 };
