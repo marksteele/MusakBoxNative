@@ -52,7 +52,7 @@ const SearchScreen = ({navigation}) => {
             })
           }
         />
-        <Icon name="search" size={30} />
+        <Icon name="search" style={styles.icon} size={30} />
       </View>
       <FlatList
         data={searchResults}

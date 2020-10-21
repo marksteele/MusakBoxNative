@@ -27,10 +27,11 @@ export default function Styles() {
     },
     input: {
       flex: 9,
-      borderColor: '#000000',
+      borderColor: 'white',
       borderWidth: 2,
       fontSize: 18,
       color: 'white',
+      backgroundColor: '#29435c',
     },
     searchBoxContainer: {
       paddingTop: 10,
