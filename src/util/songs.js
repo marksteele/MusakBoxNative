@@ -4,10 +4,10 @@ import AsyncStorage from '@react-native-community/async-storage';
 export function listSongs() {
   return AsyncStorage.getItem('songs').then((songsCached) => {
     if (songsCached !== null) {
-      console.log("Song list cache hit");
+      console.log('Song list cache hit');
       return JSON.parse(songsCached);
     }
-    console.log("Song list cache miss");
+    console.log('Song list cache miss');
     return Promise.all(
       'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
         .split('')

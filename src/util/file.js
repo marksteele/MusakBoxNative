@@ -1,30 +1,32 @@
 import RNFetchBlob from 'rn-fetch-blob';
 import {fetchSongUrl} from './songs';
 import {dirname} from 'react-native-path';
-import asyncPool from 'tiny-async-pool';
 
 const dirs = RNFetchBlob.fs.dirs;
 const basePath = `${dirs.CacheDir}/Emusak`;
 
-function safePaths(key) {
-  const safePath = `${basePath}/${key.replace(/[ !@#$%^&*()-+=]/g, '_')}`;
-  const cachePath = dirname(safePath);
-  const resultPath = `file://${safePath}`;
-  return RNFetchBlob.fs
-    .exists(cachePath)
-    .then((exists) => {
-      if (!exists) {
-        return RNFetchBlob.fs.mkdir(cachePath);
-      }
-      return Promise.resolve();
-    })
-    .then(() => {
-      return {safePath, resultPath};
-    });
+function safeKey(key) {
+  return `${basePath}/${key.replace(/[ !@#$%^&*()-+=]/g, '_')}`;
+}
+
+function filePath(key) {
+  return `file://${safeKey(key)}`;
+}
+
+function ensurePaths(key) {
+  const cachePath = dirname(safeKey(key));
+  return RNFetchBlob.fs.exists(cachePath).then((exists) => {
+    if (!exists) {
+      return RNFetchBlob.fs.mkdir(cachePath);
+    }
+    return Promise.resolve();
+  });
 }
 
 export function fetchFile(key) {
-  return safePaths(key).then(({safePath, resultPath}) => {
+  const safePath = safeKey(key);
+  const resultPath = filePath(key);
+  return ensurePaths(key).then(() => {
     return fetchCacheFile(key)
       .then((res) => res)
       .catch(() => {
@@ -45,7 +47,9 @@ export function fetchFile(key) {
 }
 
 export function fetchCacheFile(key) {
-  return safePaths(key).then(({safePath, resultPath}) => {
+  const safePath = safeKey(key);
+  const resultPath = filePath(key);
+  return ensurePaths(key).then(() => {
     return RNFetchBlob.fs.exists(safePath).then((exists) => {
       if (exists) {
         console.log('Song file cache hit: ' + key);
@@ -57,17 +61,8 @@ export function fetchCacheFile(key) {
   });
 }
 
-export async function cachePlaylist(songs) {
-  await asyncPool(
-    2,
-    songs.map((song) => song.key),
-    fetchFile,
-  );
-}
-
 export async function isCached(key) {
-  const {safePath, _} = safePaths(key);
-  return await RNFetchBlob.fs.exists(safePath);
+  return await RNFetchBlob.fs.exists(filePath(key));
 }
 
 export function clearSongFileCache() {

@@ -1,123 +1,43 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react-native/no-inline-styles */
-import React, {useState, useContext, useEffect} from 'react';
+import React, {useContext} from 'react';
 import {GlobalContext} from '../state/GlobalState';
 import TrackPlayer, {
   useTrackPlayerProgress,
   usePlaybackState,
   useTrackPlayerEvents,
 } from 'react-native-track-player';
-import {StyleSheet, Text, View} from 'react-native';
+import {Text, View} from 'react-native';
 import {FlatList, RectButton} from 'react-native-gesture-handler';
 import AppleStyleSwipeableRow from './AppleStyleSwipeableRow';
-import {fetchCacheFile, fetchFile} from '../util/file.js';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
-import NetInfo from '@react-native-community/netinfo';
+import Styles from '../Styles';
+
+const styles = Styles();
 
 export default function Player(props) {
   const playbackState = usePlaybackState();
-  const [{queue, downloadOnlyOnWifi}, dispatch] = useContext(GlobalContext);
-  const [shuffle, setShuffle] = useState(false);
-  const [playing, setPlaying] = useState(0);
-  const [loop, setLoop] = useState(false);
+  const [{queue}] = useContext(GlobalContext);
   const progress = useTrackPlayerProgress();
-  const [connected, setConnected] = useState(false);
-  const [connectionType, setConnectionType] = useState(null);
 
-  useTrackPlayerEvents(['playback-queue-ended'], async (event) => {
-    if (event.type === TrackPlayer.TrackPlayerEvents.PLAYBACK_QUEUE_ENDED) {
-      dispatch({type: 'setLoading', loading: true});
-      await skipToNext(playing);
-      dispatch({type: 'setLoading', loading: false});
+  useTrackPlayerEvents(['playback-track-changed'], async (event) => {
+    if (event.type === TrackPlayer.TrackPlayerEvents.PLAYBACK_TRACK_CHANGED) {
+      const track = await TrackPlayer.getTrack(event.nextTrack);
+      console.log(track.url);
+      const index = queue.findIndex((x) => x.id === track.id);
+      if (index !== -1) {
+        this.flatListRef.scrollToIndex({
+          animated: false,
+          index: index,
+        });
+      }
     }
   });
-
-  useEffect(() => {
-    NetInfo.addEventListener((conn) => {
-      setConnectionType(conn.type);
-      setConnected(conn.isConnected);
-    });
-  }, []);
-
-  async function playIdx(idx, dir) {
-    let url;
-    try {
-      if (!connected || (downloadOnlyOnWifi && connectionType !== 'wifi')) {
-        url = await fetchCacheFile(queue[idx].key);
-      } else {
-        url = await fetchFile(queue[idx].key);
-      }
-      await TrackPlayer.reset();
-      this.flatListRef.scrollToIndex({
-        animated: false,
-        index: idx,
-      });
-      await TrackPlayer.add({
-        ...queue[idx],
-        url: url,
-      });
-      await TrackPlayer.play();
-      setPlaying(idx);
-    } catch (err) {
-      console.log('THREW! LOOP! ' + idx);
-      return dir === 'next' ? skipToNext(idx) : skipToPrevious(idx);
-    }
-  }
-
-  async function skipToNext(current) {
-    let idx;
-    if (Array.isArray(queue) && queue.length > 0) {
-      if (shuffle) {
-        // Shuffle on, don't care about order
-        idx = Math.floor(Math.random() * queue.length);
-      } else {
-        if (loop) {
-          // Loooping. If at end, wrap
-          idx = current === queue.length - 1 ? 0 : current + 1;
-        } else {
-          // Not looping. If at end, stop.
-          if (current === queue.length - 1) {
-            return;
-          }
-          idx = current + 1;
-        }
-      }
-      dispatch({type: 'setLoading', loading: true});
-      await playIdx(idx, 'next');
-      dispatch({type: 'setLoading', loading: false});
-    }
-  }
-
-  async function skipToPrevious(current) {
-    let idx;
-    if (Array.isArray(queue) && queue.length > 0) {
-      if (shuffle) {
-        // Shuffle on, don't care about order
-        idx = Math.floor(Math.random() * queue.length);
-      } else {
-        if (loop) {
-          // Loooping. If at start, wrap
-          idx = current > 0 ? current - 1 : queue.length - 1;
-        } else {
-          // Not looping. If at start, stop.
-          if (current === 0) {
-            return;
-          }
-          idx = current - 1;
-        }
-      }
-      dispatch({type: 'setLoading', loading: true});
-      await playIdx(idx, 'prev');
-      dispatch({type: 'setLoading', loading: false});
-    }
-  }
 
   async function togglePlayback() {
     try {
       const currentTrack = await TrackPlayer.getCurrentTrack();
       if (currentTrack == null) {
-        await skipToNext(playing);
+        await TrackPlayer.skipToNext();
       } else {
         if (playbackState === TrackPlayer.STATE_PAUSED) {
           await TrackPlayer.play();
@@ -129,8 +49,8 @@ export default function Player(props) {
   }
 
   return (
-    <View style={{flex: 2}}>
-      <View style={{flex: 1, backgroundColor: 'lightgrey'}}>
+    <View style={{flex: 2.4}}>
+      <View style={{flex: 1, backgroundColor: '#30475e'}}>
         <FlatList
           ref={(ref) => {
             this.flatListRef = ref;
@@ -141,7 +61,7 @@ export default function Player(props) {
             <AppleStyleSwipeableRow item={item}>
               <RectButton
                 style={styles.rectButton}
-                onPress={() => playIdx(index)}>
+                onPress={() => TrackPlayer.skip(item.id)}>
                 <Text style={styles.title}>{item.title}</Text>
                 <Text style={styles.artist}>{item.artist}</Text>
               </RectButton>
@@ -150,7 +70,7 @@ export default function Player(props) {
           keyExtractor={(item, index) => `message ${index}`}
         />
       </View>
-      <View style={{flex: 0.5, backgroundColor: 'darkgrey'}}>
+      <View style={{flex: 0.18, backgroundColor: 'black'}}>
         <View style={styles.progress}>
           <View style={{flex: progress.position, backgroundColor: 'red'}} />
           <View
@@ -160,84 +80,36 @@ export default function Player(props) {
             }}
           />
         </View>
-        <View style={styles.controlButtonContainer}>
+        <View style={styles.container}>
           <Icon
-            name="shuffle"
+            style={styles.icon}
             size={30}
-            onPress={() => setShuffle(!shuffle)}
-            color={shuffle ? 'red' : 'black'}
-          />
-          <Icon
             name="skip-previous"
-            size={30}
-            onPress={() => skipToPrevious(playing)}
+            onPress={() => TrackPlayer.skipToPrevious()}
           />
           {playbackState === TrackPlayer.STATE_PAUSED ? (
-            <Icon name="play" size={30} onPress={() => togglePlayback()} />
+            <Icon
+              style={styles.icon}
+              size={29}
+              name="play"
+              onPress={() => togglePlayback()}
+            />
           ) : (
-            <Icon name="pause" size={30} onPress={() => togglePlayback()} />
+            <Icon
+              style={styles.icon}
+              size={29}
+              name="pause"
+              onPress={() => togglePlayback()}
+            />
           )}
           <Icon
+            style={styles.icon}
+            size={29}
             name="skip-next"
-            size={30}
-            onPress={() => skipToNext(playing)}
-          />
-          <MaterialIcon
-            name="loop"
-            size={30}
-            onPress={() => setLoop(!loop)}
-            color={loop ? 'red' : 'black'}
+            onPress={() => TrackPlayer.skipToNext()}
           />
         </View>
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    width: '100%',
-    elevation: 1,
-    borderRadius: 4,
-    shadowRadius: 2,
-    shadowOpacity: 0.1,
-    alignItems: 'center',
-    shadowColor: 'black',
-    backgroundColor: 'white',
-    shadowOffset: {width: 0, height: 1},
-  },
-  progress: {
-    height: 1,
-    width: '100%',
-    marginTop: 10,
-    flexDirection: 'row',
-  },
-  controlButtonContainer: {
-    flex: 1,
-    paddingTop: 22,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-evenly',
-  },
-  rectButton: {
-    flex: 1,
-    height: 80,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    justifyContent: 'space-between',
-    flexDirection: 'column',
-    backgroundColor: 'white',
-  },
-  separator: {
-    backgroundColor: 'rgb(200, 199, 204)',
-    height: StyleSheet.hairlineWidth,
-  },
-  title: {
-    fontWeight: 'bold',
-    backgroundColor: 'transparent',
-  },
-  artist: {
-    color: '#999',
-    backgroundColor: 'transparent',
-  },
-});

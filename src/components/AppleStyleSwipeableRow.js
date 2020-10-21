@@ -1,16 +1,18 @@
 /* eslint-disable react-native/no-inline-styles */
 import React, {useContext, useRef} from 'react';
-import {Animated, StyleSheet, View, I18nManager} from 'react-native';
+import {Animated, View} from 'react-native';
 import {GlobalContext} from '../state/GlobalState';
 import {RectButton} from 'react-native-gesture-handler';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Styles from '../Styles';
+
+const styles = Styles();
 
 const AppleStyleSwipeableRow = (props) => {
   const [{}, dispatch] = useContext(GlobalContext);
   const container = useRef(null);
-
-  const renderRightAction = (color, x, progress) => {
+  const renderRightAction = (x, progress) => {
     const trans = progress.interpolate({
       inputRange: [0, 1],
       outputRange: [x, 0],
@@ -22,9 +24,7 @@ const AppleStyleSwipeableRow = (props) => {
     };
     return (
       <Animated.View style={{flex: 1, transform: [{translateX: trans}]}}>
-        <RectButton
-          style={[styles.rightAction, {backgroundColor: color}]}
-          onPress={pressHandler}>
+        <RectButton style={styles.rightAction} onPress={pressHandler}>
           <Icon name="playlist-remove" size={40} />
         </RectButton>
       </Animated.View>
@@ -33,10 +33,10 @@ const AppleStyleSwipeableRow = (props) => {
   const renderRightActions = (progress) => (
     <View
       style={{
-        width: 192,
-        flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
+        width: 80,
+        flexDirection: 'row',
       }}>
-      {renderRightAction('#dd2c00', 64, progress)}
+      {renderRightAction(64, progress)}
     </View>
   );
 
@@ -44,7 +44,6 @@ const AppleStyleSwipeableRow = (props) => {
     <Swipeable
       ref={container}
       friction={2}
-      leftThreshold={30}
       rightThreshold={40}
       renderRightActions={renderRightActions}>
       {props.children}
@@ -53,22 +52,3 @@ const AppleStyleSwipeableRow = (props) => {
 };
 
 export default AppleStyleSwipeableRow;
-
-const styles = StyleSheet.create({
-  leftAction: {
-    flex: 1,
-    backgroundColor: '#497AFC',
-    justifyContent: 'center',
-  },
-  actionText: {
-    color: 'white',
-    fontSize: 16,
-    backgroundColor: 'transparent',
-    padding: 10,
-  },
-  rightAction: {
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-  },
-});

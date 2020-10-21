@@ -6,10 +6,10 @@ export function fetchPlaylists() {
   return AsyncStorage.getItem('playlists/')
     .then((cached) => {
       if (cached !== null) {
-        console.log("Playlist list cache hit");
+        console.log('Playlist list cache hit');
         return JSON.parse(cached);
       }
-      console.log("Playlist list cache miss");
+      console.log('Playlist list cache miss');
       return Storage.list('playlists/', {
         level: 'private',
         maxKeys: 9999,
@@ -19,19 +19,19 @@ export function fetchPlaylists() {
         );
       });
     })
-    .then((response) =>
-      response.map((item) => item.key.slice(10, item.key.length)),
-    );
+    .then((response) => {
+      return response.map((item) => item.key.slice(10, item.key.length));
+    });
 }
 
 export function loadPlaylist(key) {
   return AsyncStorage.getItem(`playlists/${key}`)
     .then((cached) => {
       if (cached !== null) {
-        console.log("Playlist cache hit");
+        console.log('Playlist cache hit');
         return cached;
       }
-      console.log("Playlist cache miss");
+      console.log('Playlist cache miss');
       return loadFile(`playlists/${key}`);
     })
     .then((data) => {
@@ -59,13 +59,33 @@ export function loadFile(key) {
 
 export function savePlaylist(playlist, songs) {
   const data = songs.map((e) => e.key).join('\n');
-  return Storage.put(`playlists/${playlist}`, data, {
+  const key = `playlists/${playlist}`;
+  return Storage.put(key, data, {
     level: 'private',
-  }).then(() => AsyncStorage.setItem(`playlists/${playlist}`, data));
+  })
+    .then(() => AsyncStorage.setItem(key, data))
+    .then(() => fetchPlaylists())
+    .then((playlists) =>
+      savePlaylists(Array.from(new Set([...playlists, playlist]))),
+    );
+}
+
+export function savePlaylists(playlists) {
+  return AsyncStorage.setItem(
+    'playlists/',
+    JSON.stringify(
+      playlists.map((x) => {
+        return {key: `playlists/${x}`};
+      }),
+    ),
+  );
 }
 
 export function removePlaylist(playlist) {
-  return Storage.remove(`playlists/${playlist}`, {level: 'private'}).then(() =>
-    AsyncStorage.removeItem(`playlists/${playlist}`),
-  );
+  return Storage.remove(`playlists/${playlist}`, {level: 'private'})
+    .then(() => AsyncStorage.removeItem(`playlists/${playlist}`))
+    .then(() => fetchPlaylists())
+    .then((playlists) =>
+      savePlaylists(playlists.filter((x) => x !== playlist)),
+    );
 }

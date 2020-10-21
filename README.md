@@ -17,10 +17,9 @@ npx react-native run-ios --simulator "iPhone SE (iOS 14.0)"
 # TODO
 
 * Document the setup to hook this into the same AWS as MusakBox (share the same Amplify setup between web app and native app).
-* Move everything related to the player instance controls into service to make remote buttons work
-* Playlist management
 * Magic wand button: random playlist
 * Cut a build of this for androids? Why not!
+
 
 # Notes
 

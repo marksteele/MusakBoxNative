@@ -1,43 +1,14 @@
+/* eslint-disable react-native/no-inline-styles */
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, {useContext, useEffect, useState} from 'react';
 import {GlobalContext} from '../state/GlobalState';
 import Fuse from 'fuse.js';
-import {Text, TextInput, View, StyleSheet, FlatList} from 'react-native';
+import {Text, TextInput, View, FlatList} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import Styles from '../Styles';
 
-const styles = StyleSheet.create({
-  searchBoxContainer: {
-    paddingTop: 10,
-    flexDirection: 'row',
-  },
-  input: {
-    flex: 9,
-    borderColor: '#000000',
-    borderWidth: 2,
-    fontSize: 25,
-  },
-  searchResultsContainer: {
-    flexDirection: 'column',
-  },
-  itemContainer: {
-    flexDirection: 'row',
-    flexWrap: 'nowrap',
-    overflow: 'hidden',
-  },
-  item: {
-    padding: 10,
-    height: 44,
-    width: '90%',
-  },
-  button: {
-    fontSize: 25,
-    textAlignVertical: 'bottom',
-  },
-  separator: {
-    backgroundColor: 'rgb(200, 199, 204)',
-    height: StyleSheet.hairlineWidth,
-  },
-});
+const styles = Styles();
+
 const SearchScreen = ({navigation}) => {
   const [searchResults, setSearchResults] = useState([]);
   const [{search, songList}, dispatch] = useContext(GlobalContext);
@@ -83,23 +54,34 @@ const SearchScreen = ({navigation}) => {
         />
         <Icon name="search" size={30} />
       </View>
-      <View style={styles.searchResultsContainer}>
-        <FlatList
-          data={searchResults}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
-          renderItem={({item}) => (
-            <View style={styles.itemContainer}>
-              <Text style={styles.item}>{`${item.title}`}</Text>
+      <FlatList
+        data={searchResults}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        renderItem={({item}) => (
+          <View style={{flexDirection: 'row'}}>
+            <View style={{flex: 9}}>
+              <Text
+                style={{
+                  ...styles.item,
+                  ...styles.primaryTextSmall,
+                }}>{`${item.title}`}</Text>
+            </View>
+            <View
+              style={{
+                alignItems: 'flex-end',
+                justifyContent: 'center',
+                alignContent: 'center',
+              }}>
               <Icon
-                style={styles.button}
+                style={styles.icon}
                 name="playlist-add"
-                size={20}
+                size={25}
                 onPress={() => addToQueue(item)}
               />
             </View>
-          )}
-        />
-      </View>
+          </View>
+        )}
+      />
     </View>
   );
 };
