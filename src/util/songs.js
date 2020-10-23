@@ -1,6 +1,5 @@
 import {Storage} from 'aws-amplify';
 import AsyncStorage from '@react-native-community/async-storage';
-import {filePath} from './file';
 
 export function listSongs() {
   return AsyncStorage.getItem('songs').then((songsCached) => {
@@ -48,9 +47,6 @@ export function fetchSongUrl(key) {
 }
 
 function cleanTitle(title, artist) {
-  if (/sister/i.test(title)) {
-    console.log(title);
-  }
   return title
     .replace(/^[^/]+\//, '') // Remove folder paths
     .replace(new RegExp(`${artist}`, 'gi'), '') // Remove artist
