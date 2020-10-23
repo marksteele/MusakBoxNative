@@ -10,27 +10,27 @@ This is a companion to MusakBox (https://github.com/marksteele/musakbox) but can
 
 Main screen
 
-[Main screen](screenshots/home.png?raw=true)
+![Main screen](screenshots/home.png?raw=true)
 
 Artist list
 
-[Artist list](screenshots/artists.png?raw=true)
+![Artist list](screenshots/artists.png?raw=true)
 
 Settings
 
-[Settings](screenshots/settings.png?raw=true)
+![Settings](screenshots/settings.png?raw=true)
 
 Playlists
 
-[Playlists]screenshots/playlists1.png?raw=true)
+![Playlists](screenshots/playlists1.png?raw=true)
 
 Managing playlists
 
-[Managing Playlists](screenshots/playlists2.png?raw=true)
+![Managing Playlists](screenshots/playlists2.png?raw=true)
 
 Searching for a song
 
-[Search for a song](screenshots/search.png?raw=true)
+![Search for a song](screenshots/search.png?raw=true)
 
 # Motivation
 
