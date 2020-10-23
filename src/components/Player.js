@@ -22,7 +22,6 @@ export default function Player(props) {
   useTrackPlayerEvents(['playback-track-changed'], async (event) => {
     if (event.type === TrackPlayer.TrackPlayerEvents.PLAYBACK_TRACK_CHANGED) {
       const track = await TrackPlayer.getTrack(event.nextTrack);
-      console.log(track.url);
       const index = queue.findIndex((x) => x.id === track.id);
       if (index !== -1) {
         this.flatListRef.scrollToIndex({
@@ -49,7 +48,7 @@ export default function Player(props) {
   }
 
   return (
-    <View style={{flex: 2.4}}>
+    <View style={{flex: 2.4, paddingBottom: 20, backgroundColor: 'black'}}>
       <View style={{flex: 1, backgroundColor: '#30475e'}}>
         <FlatList
           ref={(ref) => {
@@ -67,10 +66,9 @@ export default function Player(props) {
               </RectButton>
             </AppleStyleSwipeableRow>
           )}
-          keyExtractor={(item, index) => `message ${index}`}
         />
       </View>
-      <View style={{flex: 0.18, backgroundColor: 'black'}}>
+      <View style={{flex: 0.15, backgroundColor: 'black'}}>
         <View style={styles.progress}>
           <View style={{flex: progress.position, backgroundColor: 'red'}} />
           <View

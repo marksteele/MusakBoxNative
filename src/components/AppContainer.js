@@ -1,7 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import {GlobalContext} from '../state/GlobalState';
 import React, {useContext, useEffect, useState} from 'react';
-import Player from '../components/Player';
 import {fetchPlaylists} from '../util/playlists';
 import {listSongs, fetchSongUrl} from '../util/songs';
 import Spinner from 'react-native-loading-spinner-overlay';
@@ -35,7 +34,6 @@ const AppContainer = (props) => {
       console.log('Connected and can download...');
       // We're connected and can download things.
       if (!cacheMode) {
-        console.log('In streaming mode...');
         queue.forEach((song) => {
           fetchSongUrl(song.key)
             .then((url) => TrackPlayer.add({...song, url: url}))
@@ -47,8 +45,6 @@ const AppContainer = (props) => {
         return;
       }
       // Cache first mode. Cache and play first song
-      console.log('In caching mode...');
-      console.log(`Caching ${queue[0].key}`);
       await TrackPlayer.add({
         ...queue[0],
         url: (await isCached(queue[0].key))
@@ -59,7 +55,6 @@ const AppContainer = (props) => {
       if (queue.length > 1) {
         // Cache the rest of the songs...
         await asyncPool(2, queue.slice(1, queue.length), async (song) => {
-          console.log(`Caching ${song.key}`);
           await TrackPlayer.add({
             ...song,
             url: (await isCached(song.key))
@@ -89,7 +84,6 @@ const AppContainer = (props) => {
   }, [refresh]);
 
   useEffect(() => {
-    console.log('Handling queue change...');
     if (Array.isArray(queue) && queue.length) {
       dispatch({type: 'setLoading', loading: true});
       handleQueueChange();
@@ -99,7 +93,6 @@ const AppContainer = (props) => {
   }, [queue]);
 
   useEffect(() => {
-    console.log('Handling queue change...');
     if (queue.length) {
       dispatch({type: 'setLoading', loading: true});
       handleQueueChange();
@@ -109,7 +102,6 @@ const AppContainer = (props) => {
   }, [cacheMode]);
 
   useEffect(() => {
-    console.log('Handling queue change...');
     if (queue.length) {
       dispatch({type: 'setLoading', loading: true});
       handleQueueChange();
@@ -128,7 +120,6 @@ const AppContainer = (props) => {
     <>
       <Spinner visible={loading} size="large" animation="fade" />
       {props.children}
-      <Player />
     </>
   );
 };

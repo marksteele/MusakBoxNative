@@ -5,7 +5,7 @@ import {dirname} from 'react-native-path';
 const dirs = RNFetchBlob.fs.dirs;
 const basePath = `${dirs.CacheDir}/Emusak`;
 
-function safeKey(key) {
+export function safeKey(key) {
   const match = key.match(/^.*?(\.[^.]+)$/);
   if (match !== null) {
     return `${basePath}/${md5(key)}${match[1]}`;
@@ -13,7 +13,7 @@ function safeKey(key) {
   return `${basePath}/${key.replace(/[ !@#$%^&*()-+=]/g, '_')}`;
 }
 
-function filePath(key) {
+export function filePath(key) {
   return `file://${safeKey(key)}`;
 }
 

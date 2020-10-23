@@ -80,18 +80,11 @@ const reducer = (state, action) => {
       };
     }
     case 'setQueue':
-      console.log(`New Queue has ${action.queue.length} items`);
-      if (state.shuffle && action.queue.length > 2) {
-        for (var i = action.queue.length - 1; i > 0; i--) {
-          var j = Math.floor(Math.random() * (i + 1));
-          var temp = action.queue[i];
-          action.queue[i] = action.queue[j];
-          action.queue[j] = temp;
-        }
-      }
       return {
         ...state,
-        queue: action.queue,
+        queue: state.shuffle
+          ? action.queue.sort(() => 0.5 - Math.random())
+          : action.queue,
       };
     default:
       return state;

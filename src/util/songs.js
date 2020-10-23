@@ -1,13 +1,12 @@
 import {Storage} from 'aws-amplify';
 import AsyncStorage from '@react-native-community/async-storage';
+import {filePath} from './file';
 
 export function listSongs() {
   return AsyncStorage.getItem('songs').then((songsCached) => {
     if (songsCached !== null) {
-      console.log('Song list cache hit');
       return JSON.parse(songsCached);
     }
-    console.log('Song list cache miss');
     return Promise.all(
       'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
         .split('')
@@ -33,7 +32,12 @@ export function listSongs() {
 export function parseInfo(key) {
   const match = key.match(/^songs\/([^/]+)\/(.+)\..+$/);
   return match
-    ? {key: key, artist: match[1], title: match[2], id: key}
+    ? {
+        key: key,
+        artist: match[1],
+        title: cleanTitle(match[2], match[1]),
+        id: key,
+      }
     : {artist: 'unknown', title: key};
 }
 
@@ -41,4 +45,26 @@ export function fetchSongUrl(key) {
   return Storage.get(key, {level: 'private', expires: 86400}).then(
     (result) => result,
   );
+}
+
+function cleanTitle(title, artist) {
+  if (/sister/i.test(title)) {
+    console.log(title);
+  }
+  return title
+    .replace(/^[^/]+\//, '') // Remove folder paths
+    .replace(new RegExp(`${artist}`, 'gi'), '') // Remove artist
+    .replace('()', '')
+    .replace(/^ - /, '')
+    .replaceAll('_', ' ') // Replace understores with spaces
+    .trim() // Remove space around
+    .replace(/\s{2,}/, ' ') // Replace multiple spaces with one
+    .replace(/^\d+\./, '') // 01. blah
+    .replace(/^\s*-\s+/, '')
+    .replace(/-?\s\(\d+\)/, '')
+    .replace(/^(.+? ?- ?)+/, '')
+    .replace(/^\d{2,2}\s/, '')
+    .trim()
+    .replace(/^-\s?/,'')
+    .replace(' 192 lame cbr', '');
 }
